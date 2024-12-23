@@ -48,27 +48,35 @@ export function GeminiMessageForm(): JSX.Element {
   const [messages, setMessages] = useState<Array<{ type: 'user' | 'assistant'; content: string }>>([]);
   const [input, setInput] = useState<string>('');
   const [socket, setSocket] = useState<WebSocket | null>(null);
-  const audioUrl = useRef<string | null>(null);
+  const audioQueue = useRef<string[]>([]);
   const currentAudio = useRef<HTMLAudioElement | null>(null);
   const [currentAssistantMessageIndex, setCurrentAssistantMessageIndex] = useState(-1);
 
   const playAudio = async () => {
     console.log('playAudio関数が呼ばれました');
-    if (!audioUrl.current) {
-      console.log('audioUrlが空のため再生をスキップします');
+    if (audioQueue.current.length === 0) {
+      console.log('audioQueueが空のため再生をスキップします');
       return;
     }
+
+    const url = audioQueue.current.shift();
+    if (!url) {
+      console.log('キューからURLを取得できませんでした');
+      return;
+    }
+
     if (currentAudio.current) {
       currentAudio.current.pause();
       currentAudio.current = null;
     }
-    const audio = new Audio(audioUrl.current);
+    const audio = new Audio(url);
     console.log('Audioオブジェクトを作成しました:', audio);
     currentAudio.current = audio;
     audio.addEventListener('ended', () => {
       console.log('音声再生が終了しました');
       currentAudio.current = null;
-      audioUrl.current = null;
+      // 次の音声があれば再生を開始
+      playAudio();
     });
     try {
       console.log('audio.play()を実行します:', audio);
@@ -105,9 +113,12 @@ export function GeminiMessageForm(): JSX.Element {
           });
         }
         else if (message.type === 'audio') {
-          console.log('audioUrlを設定:', message.data);
-          audioUrl.current = message.data;
-          playAudio();
+          console.log('audioUrlをキューに追加:', message.data);
+          audioQueue.current.push(message.data);
+          // キューに音声が追加されたら、再生を開始（まだ再生中でなければ）
+          if (!currentAudio.current) {
+            playAudio();
+          }
         }
       }
       catch (e) {
@@ -128,7 +139,7 @@ export function GeminiMessageForm(): JSX.Element {
       currentAudio.current.pause();
       currentAudio.current = null;
     }
-    audioUrl.current = null;
+    audioQueue.current = [];
     setCurrentAssistantMessageIndex(-1);
     if (socket && input) {
       socket.send(input);
