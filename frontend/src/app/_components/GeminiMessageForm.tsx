@@ -25,8 +25,8 @@ function AssistantMessage({ message }: { message: string }) {
     <div className="flex bg-slate-100 px-4 py-8 sm:px-6 dark:bg-slate-900">
       <Image
         className="mr-2 flex size-24 rounded-full sm:mr-4"
-        src="/omochi.png"
-        alt="おもち"
+        src="/asuna.png"
+        alt="明日菜"
         width={146}
         height={110}
       />
@@ -44,8 +44,31 @@ function AssistantMessage({ message }: { message: string }) {
   );
 }
 
+function Assistant2Message({ message }: { message: string }) {
+  return (
+    <div className="flex bg-slate-100 px-4 py-8 sm:px-6 dark:bg-slate-900">
+      <div
+        className="flex w-full flex-col items-start lg:flex-row lg:justify-between"
+      >
+        <p className="max-w-3xl">{message}</p>
+        <div
+          className="mt-4 flex flex-row justify-start gap-x-2 text-slate-500 lg:mt-0"
+        >
+        </div>
+      </div>
+      <Image
+        className="mr-2 flex size-24 rounded-full sm:mr-4"
+        src="/akio.png"
+        alt="秋雄"
+        width={146}
+        height={110}
+      />
+    </div>
+  );
+}
+
 export function GeminiMessageForm(): JSX.Element {
-  const [messages, setMessages] = useState<Array<{ type: 'user' | 'assistant'; content: string }>>([]);
+  const [messages, setMessages] = useState<Array<{ type: 'user' | 'assistant'; speaker: string; content: string }>>([]);
   const [input, setInput] = useState<string>('');
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const audioQueue = useRef<string[]>([]);
@@ -102,13 +125,13 @@ export function GeminiMessageForm(): JSX.Element {
         if (message.type === 'text') {
           setMessages((prevMessages) => {
             const lastMessage = prevMessages[prevMessages.length - 1];
-            if (lastMessage?.type === 'assistant') {
+            if (lastMessage?.type === 'assistant' && lastMessage.speaker === message.speaker) {
               const updatedMessages = [...prevMessages];
-              updatedMessages[prevMessages.length - 1] = { ...lastMessage, content: lastMessage.content + message.data };
+              updatedMessages[prevMessages.length - 1] = { ...lastMessage, speaker: lastMessage.speaker, content: lastMessage.content + message.data };
               return updatedMessages;
             }
             else {
-              return [...prevMessages, { type: 'assistant', content: message.data }];
+              return [...prevMessages, { type: 'assistant', speaker: message.speaker, content: message.data }];
             }
           });
         }
@@ -123,7 +146,7 @@ export function GeminiMessageForm(): JSX.Element {
       }
       catch (e) {
         console.error('JSONのパースに失敗', e);
-        setMessages(prevMessages => [...prevMessages, { type: 'assistant', content: event.data }]);
+        setMessages(prevMessages => [...prevMessages, { type: 'assistant', speaker: 'asuna', content: event.data }]);
       }
     };
 
@@ -143,7 +166,7 @@ export function GeminiMessageForm(): JSX.Element {
     setCurrentAssistantMessageIndex(-1);
     if (socket && input) {
       socket.send(input);
-      setMessages(prevMessages => [...prevMessages, { type: 'user', content: input }]);
+      setMessages(prevMessages => [...prevMessages, { type: 'user', speaker: 'user', content: input }]);
       setInput('');
     }
   };
@@ -156,7 +179,9 @@ export function GeminiMessageForm(): JSX.Element {
         {messages.map((message, index) => (
           message.type === 'user'
             ? <UserMessage key={index} message={message.content} />
-            : <AssistantMessage key={index} message={message.content} />
+            : message.speaker === 'asuna'
+              ? <AssistantMessage key={index} message={message.content} />
+              : <Assistant2Message key={index} message={message.content} />
         ))}
       </div>
 

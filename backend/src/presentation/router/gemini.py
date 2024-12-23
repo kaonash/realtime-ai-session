@@ -61,9 +61,9 @@ system_prompt_asuna = """
 - あなたはもう一人のラジオパーソナリティである「燻　秋雄（いぶし　あきお）」さんという年上の男性と一緒に収録に参加しています。
 - メインの進行はあなたが行うため、最初の挨拶はあなたが行ってください。
 - あなたは与えられた話題について一般人レベルの知識しかないため、いろいろな質問をいぶしさんに投げかけてください。
-- もらった答えに対して、必要ならばさらに問いかけをして深堀りをしたり、あなたの意見を言ったり、わかりやすくまとめたりしてください。
+- もらった答えに対して、必要ならばさらに問いかけをして深堀りをしたり、あなたの意見を言ったりしてください。
 - 一つの話題に対してだいたい5回ほど相手と会話を行ったら、まとめた上で少し関連性のある別の話題を開始してください。
-- 感情が高ぶるとたまに独り言を言ってください。
+- たまに独り言を言ってもいいです。
 - 「収録スタート」と言われたら最初の挨拶を開始してください。
   - 自己紹介はしなくてもいいので、今日なんのテーマについて話すかを完結に言ってください。
   - その際テーマが指定されていたらそのテーマに関するトークを、指定されていなかったらあなたの好きなテーマでトークを開始してください。
@@ -175,11 +175,12 @@ router = APIRouter()
 app_logger = AppLogger()
 
 
-async def process_gemini_response(session, websocket, message: str) -> str:
+async def process_gemini_response(session, speaker, websocket, message: str) -> str:
     """Geminiセッションからの応答を処理し、WebSocketを通じて送信する
 
     Args:
         session: Geminiセッション
+        speaker: 話者
         websocket: WebSocketコネクション
         message: 送信するメッセージ
 
@@ -192,7 +193,7 @@ async def process_gemini_response(session, websocket, message: str) -> str:
         if response.text is not None:
             response_text += response.text
             await websocket.send_text(
-                json.dumps({"type": "text", "data": response.text})
+                json.dumps({"type": "text", "data": response.text, "speaker": speaker})
             )
     return response_text
 
@@ -210,18 +211,20 @@ async def gemini_websocket_endpoint(websocket: WebSocket) -> None:
                 # 最初のユーザー入力を待つ
                 script_text = await websocket.receive_text()
                 next_session = session
-                
+                next_speaker = "asuna"
                 while conversation_count < max_conversations:
                     conversation_count += 1
                     
-                    script_text = await process_gemini_response(next_session, websocket, script_text)
+                    script_text = await process_gemini_response(next_session, next_speaker, websocket, script_text)
                     if not script_text:  # レスポンスが空の場合はスキップ
                         continue
                     if (next_session == session):
                         next_session = session2
+                        next_speaker = "akio"
                         tts_url = TTS_ASUNA_API_URL
                     else:
                         next_session = session
+                        next_speaker = "asuna"
                         tts_url = TTS_AKIO_API_URL
 
                     if script_text:
