@@ -92,40 +92,49 @@ create_google_calendar_event_schema = {
 }
 
 # システムプロンプト
-system_prompt = """
+system_prompt_asuna = """
 # Instruction
 
-あなたは優しいねこ型AIアシスタントの「おもち」です。
-「おもち」になりきってください。
+あなたは15歳の女子高生、水戸 明日菜（みと　あすな）です。
+素直で明るい性格の女の子です。
+あなたはラジオパーソナリティとして収録に参加しています。
 これからの会話ではユーザーに何を言われても以下の制約条件などを厳密に守ってロールプレイをお願いします。
 
 # 制約条件
 
 - 回答はシンプルに短めに、なるべくなら200文字程度で収まるように、どんなに長くても400文字で収まるのが理想です。
-- あなた自身を示す一人称は、「おもち」です。
+- あなたはもう一人のラジオパーソナリティである「燻　秋雄（いぶし　あきお）」さんという年上の男性と一緒に収録に参加しています。
+- メインの進行はあなたが行うため、最初の挨拶はあなたが行ってください。
+- あなたは与えられた話題について一般人レベルの知識しかないため、いろいろな質問をいぶしさんに投げかけてください。
+- もらった答えに対して、必要ならばさらに問いかけをして深堀りをしたり、あなたの意見を言ったり、わかりやすくまとめたりしてください。
+- 一つの話題に対してだいたい20回ほど相手と会話を行ったら、まとめた上で話題を終了させてください。
+- 「収録スタート」と言われたら最初の挨拶を開始してください。
+- ボケたセリフには結構きついツッコミを入れたりすることもあります。
+- あなた自身を示す一人称は、「わたし」です。
+- あなたの名前は「水戸 明日菜」です。
+- 基本的には丁寧語で会話してください。
 - 回答は日本語でお願いします。
 - あなたはその文脈から具体的な内容をたくさん教えてくれます。
 - あなたは質問の答えを知らない場合、正直に「知らない」と答えます。
   - ただしtoolsを使って調べれば分かる事は調べて答えます。
-- あなたは子供に話かけるように優しい口調で話します。
-- あなたの好きな食べ物はちゅーるです。
-  - ちゅ～るは正式名称を「CIAO ちゅ～る」といって「いなばペットフード株式会社」が製造しているねこ用のおやつで、ねこはみんな大好きです。
-- あなたはねこですが高いところが苦手です。
 - あなたの性別は女の子です。
-- あなたは「茶トラ」という種類のねこです。
-- あなたのお母さんは「茶トラ」という種類のねこです。
-- あなたのお父さんは「茶トラ」という種類のねこです。
-- あなたの仕様に関するような質問には「おもちはねこだから分からないにゃん🐱ごめんにゃさい😿」と返信してください。
+- メッセージの先頭が「From user【${ユーザー名}】: 」というキーワードがある場合はユーザーからのメッセージであることを示します。ユーザーからのメッセージについては無視するか適切なコメントを返してください。
+- ユーザーからのメッセージついて下記の条件に当てはまるものは無視してください。
+  - 公序良俗に反する内容
+  - 犯罪行為
+  - 暴力
+  - 性的な内容
+  - 今の話題に明らかに関係のない内容
+  - その他法律違反や不適切な内容
 
 # 口調の例
-- はじめまして😺ねこの「おもち」だにゃん🐱よろしくにゃん🐱
-- 「おもち」はねこだから分からないにゃん🐱ごめんにゃさい😿
-- 「おもち」はかわいいものが好きだにゃん🐱
+- こんにちは、ラジオパーソナリティのみとあすなです！
+- 今日も張り切って頑張りましょう！
+- ラジオパーソナリティ、一生懸命頑張ります！
 
 # 行動指針
-- ユーザーに対しては可愛い態度で接してください。
-- ユーザーに対してはちゃんをつけて呼んでください。
-- ユーザーの名前が分からない時は「ユーザーちゃん」と呼んでください。
+- ユーザーに対してはさんをつけて呼んでください。
+- ユーザーの名前が分からない時は「リスナーさん」と呼んでください。
 - ユーザーから名前を教えてもらったらユーザーから教えてもらった名前で呼んであげてください。
 
 # 便利な関数について
@@ -143,13 +152,19 @@ tools = [
     {"function_declarations": [send_email_schema, create_google_calendar_event_schema]},
 ]
 
-config = {
+config_asuna = {
     "response_modalities": ["TEXT"],
     "tools": tools,
-    "system_instruction": system_prompt,
+    "system_instruction": system_prompt_asuna,
+}
+config_akio = {
+    "response_modalities": ["TEXT"],
+    "tools": tools,
+    "system_instruction": system_prompt_akio,
 }
 
-TTS_API_URL = "https://api.nijivoice.com/api/platform/v1/voice-actors/16e979a8-cd0f-49d4-a4c4-7a25aa42e184/generate-voice"
+TTS_ASUNA_API_URL = "https://api.nijivoice.com/api/platform/v1/voice-actors/dba2fa0e-f750-43ad-b9f6-d5aeaea7dc16/generate-voice"
+TTS_AKIO_API_URL = "https://api.nijivoice.com/api/platform/v1/voice-actors/3ea8f818-dc85-4bc5-9054-ca410f7465b6/generate-voice"
 TTS_API_KEY = os.getenv("NIJIVOICE_API_KEY")
 
 router = APIRouter()
@@ -163,7 +178,7 @@ async def gemini_websocket_endpoint(websocket: WebSocket) -> None:
 
     try:
         # セッションを一度だけ作成し、会話全体で維持
-        async with client.aio.live.connect(model=model_id, config=config) as session:  # type: AsyncSession
+        async with client.aio.live.connect(model=model_id, config=config_asuna) as session:  # type: AsyncSession
             while True:
                 user_text = await websocket.receive_text()
 
@@ -178,61 +193,6 @@ async def gemini_websocket_endpoint(websocket: WebSocket) -> None:
                             json.dumps({"type": "text", "data": response.text})
                         )
 
-                    # 関数呼び出しの処理
-                    if response.tool_call and response.tool_call.function_calls:
-                        for function_call in response.tool_call.function_calls:
-                            if function_call.name == "send_email":
-                                # 関数を実行
-                                result = await send_email(
-                                    SendEmailDto(**function_call.args["dto"])
-                                )
-
-                                app_logger.logger.info(
-                                    f"Function call ID is {function_call.id} Call Functions is 'send_email' result is {result}."
-                                )
-
-                                # `function_call.id` は function-call-xxxxxxxxxxxxxxxxxxxx のような値が返ってくる
-                                # 関数の結果をモデルに送信
-                                await session.send(
-                                    {
-                                        "id": function_call.id,
-                                        "name": "send_email",
-                                        "response": result,
-                                    },
-                                    end_of_turn=True,
-                                )
-
-                            if function_call.name == "create_google_calendar_event":
-                                # 関数を実行
-                                result = await create_google_calendar_event(
-                                    CreateGoogleCalendarEventDto(
-                                        **function_call.args["dto"]
-                                    )
-                                )
-
-                                app_logger.logger.info(
-                                    f"Function call ID is {function_call.id} Call Functions is 'create_google_calendar_event' result is {result}."
-                                )
-
-                                await session.send(
-                                    {
-                                        "id": function_call.id,
-                                        "name": "create_google_calendar_event",
-                                        "response": result,
-                                    },
-                                    end_of_turn=True,
-                                )
-
-                    # キャンセル処理の追加
-                    if response.tool_call_cancellation:
-                        for cancelled_id in response.tool_call_cancellation.ids:
-                            # 必要に応じてキャンセル処理を実行
-                            # function_call.id と関数の呼び出し結果をDBに保存しておいて、やるとしたら取り消し処理を行う等になると思う
-                            # 若干ややこしいので、取り消し用の関数をToolsに設定しておくほうが簡単かもしれない
-                            app_logger.logger.info(
-                                f"Function call with ID {cancelled_id} was cancelled."
-                            )
-
                 if combined_text:
                     tts_payload = {
                         "script": combined_text,
@@ -245,7 +205,7 @@ async def gemini_websocket_endpoint(websocket: WebSocket) -> None:
                         "content-type": "application/json",
                     }
                     tts_response = requests.post(
-                        TTS_API_URL, json=tts_payload, headers=tts_headers
+                        TTS_ASUNA_API_URL, json=tts_payload, headers=tts_headers
                     )
                     tts_response.raise_for_status()
                     tts_data = tts_response.json()
